@@ -4,12 +4,16 @@ import path from 'path';
 import { Pool } from 'pg';
 import puppeteer from 'puppeteer';
 import { fileURLToPath } from 'url';
-
+import Table from 'cli-table'
 dotenv.config();
 const pool = new Pool({
   ssl: {
     rejectUnauthorized: false
   }
+});
+const todaysProduct = new Table({
+  head: ['Link', 'Current Price', 'Price Notify']
+  , colWidths: [300, 50, 50]
 });
 // Read or create db.json
 const defaultData = { products: [], flipkarLinksToWatch: [] };
@@ -45,19 +49,21 @@ async function getResult(contentDiv, shopCheerioLoad, url) {
           !elementText.includes('month') &&
           !elementText.includes('Bank') &&
           $element.parent().attr('font') === 'default-fk-font-m' &&
-          $element.parent().attr('style').includes('#333333ff')
+          $element.parent().attr('style').includes('#333333ff') &&
+          !$element.parent().attr('style').includes('line-through')
         );
       })
       .map((e) => shopCheerioLoad(e).text().trim());
-    soldOutResult = contentDiv
-      .filter(
-        (e) =>
-          (e.type === 'text' &&
-            shopCheerioLoad(e).text().trim().startsWith('Sold')) ||
-          shopCheerioLoad(e).text().trim().includes('Unavailable')
-      )
-      .map((e) => shopCheerioLoad(e).text().trim());
-  } else {
+    soldOutResult = [shopCheerioLoad(contentDiv).find('.r-1iln25a').text().trim().includes('Notify')]
+  } else if (url.includes("lenovo.com")) {
+    result = [shopCheerioLoad('.price-title').text()];
+    soldOutResult = []
+  }
+  else if (url.includes("thesleepcompany.in")) {
+    result = [shopCheerioLoad('.dev_variant_price').text()]
+    soldOutResult = []
+  }
+  else {
     result = ['₹' + shopCheerioLoad('#apex_desktop .a-price-whole').text()];
     soldOutResult = shopCheerioLoad('#apex_desktop')
       .text()
@@ -72,11 +78,12 @@ async function getResult(contentDiv, shopCheerioLoad, url) {
 }
 const browser = await puppeteer.launch({ headless: false });
 let linkIndexCount = 0;
-const todaysProduct = [];
 const browserCloseHandler = async (linkIndexCount, browser) => {
   try {
     if (linkIndexCount === productResults.length) {
       await browser.close();
+      if (todaysProduct.length > 0)
+        console.log(todaysProduct.toString());
     }
   } catch (err) {
     console.error('Error during close ', err);
@@ -144,6 +151,9 @@ while (linkIndexCount < productResults.length) {
       text: 'insert into history (product_id,price,date,should_notify) values ($1,$2,$3,$4)',
       values: [productId, price, new Date(), shouldNotify],
     });
+  }
+  if (shouldNotify) {
+    todaysProduct.push([url, price, priceNotify])
   }
   await sleep(1000);
   linkIndexCount += 1;
