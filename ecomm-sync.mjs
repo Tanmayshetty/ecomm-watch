@@ -15,6 +15,24 @@ const todaysProduct = new Table({
   head: ['Link', 'Current Price', 'Price Notify']
   , colWidths: [300, 50, 50]
 });
+// const lenvoLoggedIn = false;
+// const lenovologin = async (page, url) => {
+//   if (!lenvoLoggedIn && url.includes("lenovo.com")) {
+//     const loginURL = "https://account.lenovo.com/in/en/account/login/index.html";
+//     await page.goto(loginURL.trim());
+//     await page.content({ waitUntil: 'domcontentloaded' });
+//     const emailLoginAddressText = ".email_input_text"
+//     await page.type(emailLoginAddressText, process.env.LENOVO_USER_EMAIL);
+//     await sleep(1000);
+//     await page.keyboard.press('Enter');
+//     await page.locator('.button_emailContinue').click({ force: true, clickCount: 2 });
+//     await page.content({ waitUntil: 'domcontentloaded' });
+//     await sleep(55000);
+//     const passwordField = ".signIn_input_text"
+//     await page.type(passwordField, process.env.LENOVO_USER_PASSWORD);
+//     lenvoLoggedIn = true
+//   }
+// }
 // Read or create db.json
 const defaultData = { products: [], flipkarLinksToWatch: [] };
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
@@ -49,7 +67,7 @@ async function getResult(contentDiv, shopCheerioLoad, url) {
           !elementText.includes('month') &&
           !elementText.includes('Bank') &&
           $element.parent().attr('font') === 'default-fk-font-m' &&
-          $element.parent().attr('style').includes('#333333ff') &&
+          $element.parent().attr('style').includes('rgb(51, 51, 51)') &&
           !$element.parent().attr('style').includes('line-through')
         );
       })
@@ -64,19 +82,19 @@ async function getResult(contentDiv, shopCheerioLoad, url) {
     soldOutResult = []
   }
   else {
-    result = ['₹' + shopCheerioLoad('#apex_desktop .a-price-whole').text()];
+    result = ['₹' + shopCheerioLoad('#apex_desktop .a-price-whole').first().text()];
     soldOutResult = shopCheerioLoad('#apex_desktop')
       .text()
       .includes('Unavailable')
       ? [{}]
       : [];
   }
-  // console.log('Result : ', result);
+  console.log("---------")
   console.log('URL : ', url);
   // console.log('Sold Out :', soldOutResult);
   return { result, soldOutResult };
 }
-const browser = await puppeteer.launch({ headless: false });
+const browser = await puppeteer.launch({ headless: false, args: ["--disable-notifications"] });
 let linkIndexCount = 0;
 const browserCloseHandler = async (linkIndexCount, browser) => {
   try {
@@ -97,13 +115,25 @@ while (linkIndexCount < productResults.length) {
     productid: productId,
     soldout: soldOut,
   } = productResults[linkIndexCount];
+  // await lenovologin(page, url);
+  // if (!url.includes("lenovo")) {
+  //   linkIndexCount += 1;
+  //   continue;
+  // }
   await page.goto(url.trim());
   try {
     if (url.includes('amazon')) {
       await page.click('text/Continue shopping');
       await sleep(5000);
     }
+    else if (url.includes('lenovo')) {
+      await sleep(5000)
+    }
+    else {
+      await sleep(2000)
+    }
   } catch (e) { }
+  await sleep(100);
   const flipkartHTML = await page.content({ waitUntil: 'domcontentloaded' });
 
   const shopCheerioLoad = cheerio.load(flipkartHTML);

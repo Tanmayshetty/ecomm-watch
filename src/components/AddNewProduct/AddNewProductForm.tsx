@@ -67,6 +67,7 @@ const AddNewProductForm = () => {
           <option>Fans</option>
           <option>Routers</option>
           <option>Laptop</option>
+          <option>Locker</option>
           <option>Microwave Ovens</option>
           <option>Phone</option>
           <option>Geaser</option>
@@ -85,7 +86,7 @@ const AddNewProductForm = () => {
           <option>Kitchen Sinks</option>
           <option>Wash Basins</option>
           <option>Stabiliser</option>
-          <option>Washing Machine</option>
+          <option>Locker</option>
           <option>Refrigerator</option>
           <option>TV</option>
           <option>HeadPhone</option>
