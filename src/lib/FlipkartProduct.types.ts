@@ -1,4 +1,5 @@
 export interface FlipkartProductData {
+  cardPrice: number;
   currentPrice: number;
   type: string;
   priceNotify: number;
@@ -26,6 +27,7 @@ export interface FlipkartLinks {
 
 export interface ProductHistory {
   price: number;
+  cardPrice: number;
   date: string;
   shouldNotify: boolean;
 }

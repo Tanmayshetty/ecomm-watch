@@ -48,6 +48,7 @@ function sleep(ms) {
 async function getResult(contentDiv, shopCheerioLoad, url) {
   let result = null;
   let soldOutResult = null;
+  let cardPrice = 0;
   if (url.includes('flipkart')) {
     result = contentDiv
       .filter((e) => {
@@ -73,6 +74,15 @@ async function getResult(contentDiv, shopCheerioLoad, url) {
       })
       .map((e) => shopCheerioLoad(e).text().trim());
     soldOutResult = [shopCheerioLoad(contentDiv).find('.r-1iln25a').text().trim().includes('Notify')]
+    const labelDiv = contentDiv.filter((el) => {
+      const text = shopCheerioLoad(el).text().trim();
+      return text === 'Lowest price for you'
+    }
+    );
+    if (labelDiv.length !== 0) {
+      const card = shopCheerioLoad(labelDiv[0]).closest('div[tabindex="0"]');
+      cardPrice = card.children('div').first().text().trim().split('₹')[1].replace(',', '');
+    }
   } else if (url.includes("lenovo.com")) {
     result = [shopCheerioLoad('.price-title').text()];
     soldOutResult = []
@@ -92,7 +102,7 @@ async function getResult(contentDiv, shopCheerioLoad, url) {
   console.log("---------")
   console.log('URL : ', url);
   // console.log('Sold Out :', soldOutResult);
-  return { result, soldOutResult };
+  return { result, soldOutResult, cardPrice };
 }
 const browser = await puppeteer.launch({ headless: false, args: ["--disable-notifications"] });
 let linkIndexCount = 0;
@@ -138,7 +148,7 @@ while (linkIndexCount < productResults.length) {
 
   const shopCheerioLoad = cheerio.load(flipkartHTML);
   const contentDiv = [...shopCheerioLoad('div').contents()];
-  const { result, soldOutResult } = await getResult(
+  const { result, soldOutResult, cardPrice } = await getResult(
     contentDiv,
     shopCheerioLoad,
     url
@@ -178,8 +188,8 @@ while (linkIndexCount < productResults.length) {
   if (productsUpdate.length === 0) {
     console.log('Price : ', price);
     await pool.query({
-      text: 'insert into history (product_id,price,date,should_notify) values ($1,$2,$3,$4)',
-      values: [productId, price, new Date(), shouldNotify],
+      text: 'insert into history (product_id,price,date,should_notify,card_price) values ($1,$2,$3,$4,$5)',
+      values: [productId, price, new Date(), shouldNotify, cardPrice],
     });
   }
   if (shouldNotify) {

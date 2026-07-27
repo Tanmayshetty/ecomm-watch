@@ -67,6 +67,11 @@ const FlipkartChart = ({ data }: { data: FlipkartProductData[] }) => {
                 <span className='pl-2'>
                   Lowest Price: {product.lowestPrice}
                 </span>
+                {product.cardPrice !== 0 &&
+                  <span className='pl-2'>
+                    Card Price: {product.cardPrice}
+                  </span>
+                }
                 <span className='pl-2 text-red-500'>{product.type}</span>
                 {product.isSoldOut && (
                   <svg
